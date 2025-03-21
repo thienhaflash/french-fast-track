@@ -1,18 +1,36 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProgressBar from '../components/ProgressBar';
 import LessonCard from '../components/LessonCard';
-import lessons from '../data/lessons';
+import { getAllLessonMeta, lessonIds } from '../data/lessons';
 import { BookOpen, Clock, CheckCheck } from 'lucide-react';
 
 const Index = () => {
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
   const [currentDay, setCurrentDay] = useState(1);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // In a real app, this would come from user data
   useEffect(() => {
+    // Load all lesson metadata
+    const loadLessons = async () => {
+      try {
+        console.log('Loading lessons metadata...');
+        const lessonMeta = await getAllLessonMeta();
+        console.log('Loaded metadata:', lessonMeta);
+        setLessons(lessonMeta);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to load lessons:', error);
+        setError(`Failed to load lessons: ${error instanceof Error ? error.message : String(error)}`);
+        setLoading(false);
+      }
+    };
+    
+    loadLessons();
+    
     // For demo purposes, let's assume the user has completed the first two lessons
     setCompletedLessons([1, 2]);
     setCurrentDay(3);
@@ -20,6 +38,49 @@ const Index = () => {
 
   const isLessonCompleted = (lessonId: number) => completedLessons.includes(lessonId);
   const isLessonLocked = (day: number) => day > currentDay;
+
+  // For debugging purposes, let's render fallback content if no lessons are loaded
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
+        <Header />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12">
+          <div className="text-center">
+            <p>Loading lessons...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
+        <Header />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12">
+          <div className="text-center text-red-500">
+            <p>Error: {error}</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!lessons || lessons.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
+        <Header />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12">
+          <div className="text-center">
+            <p>No lessons found. Please make sure your lesson data is correctly set up.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">

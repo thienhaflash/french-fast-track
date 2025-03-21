@@ -1,69 +1,61 @@
-# Welcome to your Lovable project
+# French Fast Track
 
-## Project info
+A web application designed to help users learn French in just 20 days, utilizing modern web technologies for an interactive learning experience.
 
-**URL**: https://lovable.dev/projects/d06e7ea4-d3ba-472e-912f-5abb9eada92c
+## Tech Stack
 
-## How can I edit this code?
+- **React**: A JavaScript library for building user interfaces.
+- **TypeScript**: A superset of JavaScript that adds static typing.
+- **Vite**: A fast build tool and development server.
+- **Tailwind CSS**: A utility-first CSS framework for styling.
+- **React Router**: For client-side routing.
+- **TanStack Query**: For data fetching and state management.
+- **Lucide Icons**: A collection of open-source icons.
+- **Radix UI**: For building accessible UI components.
+- **Recharts**: For rendering charts and visual data representations.
+- **Supabase**: For backend services, including authentication and database management.
 
-There are several ways of editing your application.
+## Installation
 
-**Use Lovable**
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/french-fast-track.git
+   cd french-fast-track
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d06e7ea4-d3ba-472e-912f-5abb9eada92c) and start prompting.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-**Use your preferred IDE**
+4. Open your browser and navigate to `http://localhost:3000`.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Usage
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Navigate through the application using the header links.
+- Access lessons and track your progress with the progress bar.
+- Use the calendar to manage your learning schedule.
 
-Follow these steps:
+## Features
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **Responsive Design**: Built with a mobile-first approach using Tailwind CSS.
+- **Interactive Lessons**: Engage with lessons that include vocabulary and exercises.
+- **Progress Tracking**: Visualize your learning progress with a progress bar.
+- **Custom UI Components**: Built using Radix UI for accessibility and customization.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Contributing
 
-# Step 3: Install the necessary dependencies.
-npm i
+Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## License
 
-**Edit a file directly in GitHub**
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Acknowledgments
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/d06e7ea4-d3ba-472e-912f-5abb9eada92c) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- Thanks to the creators of the libraries and frameworks used in this project.

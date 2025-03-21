@@ -1,0 +1,35 @@
+# React with Vite and Tailwind CSS Setup
+
+# Language and Framework Rules
+You are working with React to build a client-side application, leveraging Tailwind CSS for styling and Vite for development and build processes.
+
+# General Instructions
+1. Use Vite for optimal development and build tooling, benefiting from fast refresh and ES module support.
+2. Implement TypeScript for strong typing in all components.
+3. Structure your files with component-centric hierarchy: components, hooks, utilities, and styles.
+4. Prioritize a mobile-first responsive design approach using Tailwind CSS.
+5. Ensure component modularity and reusability, utilizing functional components and hooks.
+
+# Styling Guidelines
+- Use Tailwind CSS for utility-first styling.
+- Apply mobile-first responsive design principles.
+- Leverage Tailwind’s theme configuration for custom styling needs.
+
+# Performance Optimization
+- Optimize images using modern formats like WebP and lazy loading.
+- Utilize Vite’s code splitting features to minimize bundle sizes.
+- Favor Pure Function components for performance gains.
+
+# State Management and Server Communication
+- Use React Query or SWR for data fetching practices with Supabase.
+- Implement error boundaries for managing component-level errors.
+
+# Security and Authentication
+- Use Supabase Auth for managing user sessions securely.
+- Ensure all sensitive operations are securely handled, adhering to Supabase best practices.
+
+# Testing
+- Set up React Testing Library with Jest for unit testing components.
+- Include integration tests for major user flows.
+
+Copy and add a `.cursorrules` file in the root of your project. The instructions in the `.cursorrules` file will be automatically included as context to your chats in Cursor. The more specific your rules for your project, the better.

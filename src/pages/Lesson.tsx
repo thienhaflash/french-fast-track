@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import lessons, { VocabularyItem, Exercise } from '../data/lessons';
+import { getLesson, VocabularyItem, Exercise, Lesson as LessonType } from '../data/lessons';
 import { ChevronLeft, ChevronRight, Volume2, Check } from 'lucide-react';
 
 const Lesson = () => {
@@ -11,7 +10,9 @@ const Lesson = () => {
   const navigate = useNavigate();
   const lessonId = parseInt(id || '1');
   
-  const lesson = lessons.find(l => l.id === lessonId);
+  const [lesson, setLesson] = useState<LessonType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const [currentStep, setCurrentStep] = useState<'vocabulary' | 'exercises' | 'completed'>('vocabulary');
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -19,10 +20,38 @@ const Lesson = () => {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [userInput, setUserInput] = useState('');
   
-  if (!lesson) {
+  useEffect(() => {
+    const loadLesson = async () => {
+      try {
+        const lessonData = await getLesson(lessonId);
+        if (!lessonData) {
+          setError('Lesson not found');
+        } else {
+          setLesson(lessonData);
+        }
+      } catch (error) {
+        console.error('Failed to load lesson:', error);
+        setError('Failed to load lesson');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadLesson();
+  }, [lessonId]);
+  
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <p>Lesson not found</p>
+        <p>Loading lesson...</p>
+      </div>
+    );
+  }
+  
+  if (error || !lesson) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <p>{error || 'Lesson not found'}</p>
         <button 
           onClick={() => navigate('/')}
           className="mt-4 px-6 py-2 bg-french-blue text-white rounded-lg"
