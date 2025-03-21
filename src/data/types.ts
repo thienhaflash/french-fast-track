@@ -18,5 +18,6 @@ export interface Lesson {
   title: string;
   description: string;
   vocabulary: VocabularyItem[];
+  practiceSentences?: string[];
   exercises: Exercise[];
 } 
