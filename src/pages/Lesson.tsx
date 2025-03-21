@@ -5,6 +5,7 @@ import { getLesson } from '../data/lessons/index';
 import { Lesson as LessonType, VocabularyItem, Exercise } from '../data/types';
 import { ChevronLeft, ChevronRight, Volume2, Check } from 'lucide-react';
 import { useExercises } from '../hooks/useExercises';
+import { completeLesson } from '../lib/progressManager';
 
 const Lesson = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ const Lesson = () => {
   
   const [currentStep, setCurrentStep] = useState<'vocabulary' | 'exercises' | 'completed'>('vocabulary');
   const [userInput, setUserInput] = useState('');
+  const [lessonCompleted, setLessonCompleted] = useState(false);
   
   // Use our custom hook to manage exercises
   const exerciseManager = useExercises(lesson, {
@@ -43,6 +45,15 @@ const Lesson = () => {
     
     loadLesson();
   }, [lessonId]);
+  
+  // Effect to mark lesson as completed when user reaches the completion screen
+  useEffect(() => {
+    if (currentStep === 'completed' && !lessonCompleted && lesson) {
+      // Save progress to localStorage via our progress manager
+      completeLesson(lesson.id);
+      setLessonCompleted(true);
+    }
+  }, [currentStep, lesson, lessonCompleted]);
   
   if (loading || exerciseManager.isGenerating) {
     return (
@@ -127,7 +138,7 @@ const Lesson = () => {
   };
   
   const handleFinish = () => {
-    // In a real app, this would save progress
+    // Navigate back to the lessons page
     navigate('/');
   };
   

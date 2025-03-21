@@ -1,201 +1,160 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { lessonIds, getAllLessonMeta, getLesson, LessonMeta } from '../data/lessons/index';
-import { Lesson, Exercise } from '../data/types';
-import { 
-  generateExercises, 
-  generateMixedExercises,
-  multipleChoiceGenerator, 
-  fillInBlankGenerator 
-} from '../lib/exercises';
+import { getCompletedLessons, getCurrentDay, isVipMode, toggleVipMode, resetProgress, setCurrentDay } from '../lib/progressManager';
+import { TOTAL_LESSONS } from '../data/lessons/index';
 
 const Debug = () => {
-  const [metadata, setMetadata] = useState<LessonMeta[]>([]);
-  const [fullLesson, setFullLesson] = useState<Lesson | null>(null);
-  const [selectedLessonId, setSelectedLessonId] = useState<number>(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
+  const [currentDay, setCurrentDayState] = useState(1);
+  const [vipEnabled, setVipEnabled] = useState(false);
+  const [customDay, setCustomDay] = useState('1');
   
-  // Exercise generation testing
-  const [generatedExercises, setGeneratedExercises] = useState<Exercise[]>([]);
-  const [exerciseType, setExerciseType] = useState<'multiple-choice' | 'fill-in-blank' | 'mixed'>('mixed');
-  const [exerciseCount, setExerciseCount] = useState(4);
-
   useEffect(() => {
-    const loadMetadata = async () => {
-      try {
-        console.log('Loading lesson metadata...');
-        const meta = await getAllLessonMeta();
-        console.log('Metadata loaded:', meta);
-        setMetadata(meta || []);
-      } catch (err) {
-        console.error('Error loading metadata:', err);
-        setError(`Error loading metadata: ${err instanceof Error ? err.message : String(err)}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMetadata();
+    // Load progress data
+    loadProgressData();
   }, []);
-
-  const loadSingleLesson = async (id: number) => {
-    try {
-      setLoading(true);
-      console.log(`Loading lesson ${id}...`);
-      const lesson = await getLesson(id);
-      console.log(`Lesson ${id} loaded:`, lesson);
-      setFullLesson(lesson);
-      setError(null);
-      
-      // Reset generated exercises
-      setGeneratedExercises([]);
-    } catch (err) {
-      console.error(`Error loading lesson ${id}:`, err);
-      setError(`Error loading lesson ${id}: ${err instanceof Error ? err.message : String(err)}`);
-      setFullLesson(null);
-    } finally {
-      setLoading(false);
+  
+  const loadProgressData = () => {
+    setCompletedLessons(getCompletedLessons());
+    setCurrentDayState(getCurrentDay());
+    setVipEnabled(isVipMode());
+  };
+  
+  const handleResetProgress = () => {
+    resetProgress();
+    loadProgressData();
+  };
+  
+  const handleToggleVIP = () => {
+    const newValue = toggleVipMode();
+    setVipEnabled(newValue);
+  };
+  
+  const handleCompleteLesson = (lessonId: number) => {
+    // Simulate lesson completion
+    const updatedCompleted = [...completedLessons];
+    if (!updatedCompleted.includes(lessonId)) {
+      updatedCompleted.push(lessonId);
+      localStorage.setItem('frenchFastTrack_completedLessons', JSON.stringify(updatedCompleted));
+    }
+    
+    // Unlock next day if needed
+    const nextDay = lessonId + 1;
+    if (nextDay > currentDay) {
+      setCurrentDay(nextDay);
+    }
+    
+    // Reload data
+    loadProgressData();
+  };
+  
+  const handleSetCustomDay = () => {
+    const day = parseInt(customDay);
+    if (!isNaN(day) && day >= 1 && day <= TOTAL_LESSONS) {
+      setCurrentDay(day);
+      loadProgressData();
     }
   };
   
-  const generateExercisesForDebug = () => {
-    if (!fullLesson) return;
-    
-    try {
-      let exercises: Exercise[];
-      
-      switch (exerciseType) {
-        case 'multiple-choice':
-          exercises = generateExercises(fullLesson, 'multiple-choice', exerciseCount);
-          break;
-        case 'fill-in-blank':
-          exercises = generateExercises(fullLesson, 'fill-in-blank', exerciseCount);
-          break;
-        case 'mixed':
-        default:
-          exercises = generateMixedExercises(fullLesson, exerciseCount);
-          break;
-      }
-      
-      setGeneratedExercises(exercises);
-    } catch (err) {
-      console.error('Error generating exercises:', err);
-      setError(`Error generating exercises: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  };
-
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Debug Page</h1>
+      <div className="max-w-4xl mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-6">Debug Panel</h1>
         
-        <div className="mb-8 p-4 bg-gray-100 rounded">
-          <h2 className="text-xl font-bold mb-2">Environment Information</h2>
-          <pre className="bg-gray-800 text-white p-4 rounded overflow-auto">
-            {JSON.stringify({
-              userAgent: navigator.userAgent,
-              windowSize: `${window.innerWidth}x${window.innerHeight}`,
-              location: window.location.href,
-              availableLessonIds: lessonIds,
-            }, null, 2)}
-          </pre>
-        </div>
-        
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2">Lesson Metadata</h2>
-          {loading && !metadata.length ? (
-            <p>Loading metadata...</p>
-          ) : error && !metadata.length ? (
-            <div className="text-red-500">{error}</div>
-          ) : !metadata.length ? (
-            <p>No metadata available.</p>
-          ) : (
-            <div className="bg-gray-100 p-4 rounded">
-              <p className="mb-2">{metadata.length} lessons found</p>
-              <pre className="bg-gray-800 text-white p-4 rounded overflow-auto">
-                {JSON.stringify(metadata, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-        
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2">Load Single Lesson</h2>
-          <div className="flex gap-4 mb-4">
-            <select 
-              value={selectedLessonId}
-              onChange={(e) => setSelectedLessonId(Number(e.target.value))}
-              className="px-3 py-2 border rounded"
-            >
-              {lessonIds.map(id => (
-                <option key={id} value={id}>Lesson {id}</option>
-              ))}
-            </select>
-            <button 
-              onClick={() => loadSingleLesson(selectedLessonId)}
-              className="px-4 py-2 bg-blue-500 text-white rounded"
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Load Lesson'}
-            </button>
-          </div>
-          
-          {error && !fullLesson && (
-            <div className="text-red-500 mb-4">{error}</div>
-          )}
-          
-          {fullLesson && (
-            <div className="bg-gray-100 p-4 rounded">
-              <h3 className="font-bold mb-2">{fullLesson.title}</h3>
-              <pre className="bg-gray-800 text-white p-4 rounded overflow-auto">
-                {JSON.stringify(fullLesson, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-        
-        {fullLesson && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-2">Exercise Generator Test</h2>
-            <div className="flex gap-4 mb-4">
-              <select
-                value={exerciseType}
-                onChange={(e) => setExerciseType(e.target.value as any)}
-                className="px-3 py-2 border rounded"
-              >
-                <option value="mixed">Mixed Exercises</option>
-                <option value="multiple-choice">Multiple Choice Only</option>
-                <option value="fill-in-blank">Fill in Blank Only</option>
-              </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="glass-card p-6 rounded-xl">
+            <h2 className="text-xl font-semibold mb-4">Current Progress</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-french-muted">Completed Lessons:</p>
+                <p className="font-medium">{completedLessons.length === 0 ? 'None' : completedLessons.join(', ')}</p>
+              </div>
               
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={exerciseCount}
-                onChange={(e) => setExerciseCount(Number(e.target.value))}
-                className="px-3 py-2 border rounded w-20"
-              />
+              <div>
+                <p className="text-sm text-french-muted">Current Unlocked Day:</p>
+                <p className="font-medium">{currentDay}</p>
+              </div>
               
-              <button
-                onClick={generateExercisesForDebug}
-                className="px-4 py-2 bg-green-500 text-white rounded"
-              >
-                Generate Exercises
-              </button>
+              <div>
+                <p className="text-sm text-french-muted">VIP Mode:</p>
+                <p className="font-medium">{vipEnabled ? 'Enabled' : 'Disabled'}</p>
+              </div>
             </div>
             
-            {generatedExercises.length > 0 && (
-              <div className="bg-gray-100 p-4 rounded">
-                <h3 className="font-bold mb-2">Generated {exerciseType} Exercises</h3>
-                <pre className="bg-gray-800 text-white p-4 rounded overflow-auto">
-                  {JSON.stringify(generatedExercises, null, 2)}
-                </pre>
-              </div>
-            )}
+            <div className="mt-6 space-y-4">
+              <button 
+                onClick={handleResetProgress}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Reset All Progress
+              </button>
+              
+              <button 
+                onClick={handleToggleVIP}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  vipEnabled 
+                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' 
+                    : 'bg-yellow-400 text-gray-800 hover:bg-yellow-500'
+                }`}
+              >
+                {vipEnabled ? 'Disable VIP Mode' : 'Enable VIP Mode'}
+              </button>
+            </div>
           </div>
-        )}
+          
+          <div className="glass-card p-6 rounded-xl">
+            <h2 className="text-xl font-semibold mb-4">Test Controls</h2>
+            
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-medium mb-2">Mark Lesson as Completed</h3>
+                <div className="grid grid-cols-5 gap-2">
+                  {Array.from({ length: TOTAL_LESSONS }, (_, i) => i + 1).map(lessonId => (
+                    <button
+                      key={lessonId}
+                      onClick={() => handleCompleteLesson(lessonId)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        completedLessons.includes(lessonId)
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-200 hover:bg-gray-300'
+                      }`}
+                    >
+                      {lessonId}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-medium mb-2">Set Unlocked Day</h3>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min="1"
+                    max={TOTAL_LESSONS}
+                    value={customDay}
+                    onChange={e => setCustomDay(e.target.value)}
+                    className="w-20 p-2 border border-gray-300 rounded-lg mr-2"
+                  />
+                  <button
+                    onClick={handleSetCustomDay}
+                    className="px-4 py-2 bg-french-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Set Day
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-8">
+          <Link to="/" className="text-french-blue hover:underline">
+            Back to Lessons
+          </Link>
+        </div>
       </div>
     </Layout>
   );

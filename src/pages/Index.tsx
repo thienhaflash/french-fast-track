@@ -3,7 +3,8 @@ import Layout from '../components/Layout';
 import ProgressBar from '../components/ProgressBar';
 import LessonCard from '../components/LessonCard';
 import { getAllLessonMeta, LessonMeta, TOTAL_LESSONS } from '../data/lessons/index';
-import { BookOpen, Clock, CheckCheck } from 'lucide-react';
+import { BookOpen, Clock, CheckCheck, Star } from 'lucide-react';
+import { getCompletedLessons, getCurrentDay, isVipMode, toggleVipMode } from '../lib/progressManager';
 
 const Index = () => {
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
@@ -11,6 +12,7 @@ const Index = () => {
   const [lessons, setLessons] = useState<LessonMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [vipMode, setVipMode] = useState(false);
   
   useEffect(() => {
     // Load all lesson metadata
@@ -30,13 +32,23 @@ const Index = () => {
     
     loadLessons();
     
-    // For demo purposes, let's assume the user has completed the first two lessons
-    setCompletedLessons([1, 2]);
-    setCurrentDay(3);
+    // Load user progress from localStorage
+    const storedCompletedLessons = getCompletedLessons();
+    const storedCurrentDay = getCurrentDay();
+    const storedVipMode = isVipMode();
+    
+    setCompletedLessons(storedCompletedLessons);
+    setCurrentDay(storedCurrentDay);
+    setVipMode(storedVipMode);
   }, []);
 
   const isLessonCompleted = (lessonId: number) => completedLessons.includes(lessonId);
-  const isLessonLocked = (day: number) => day > currentDay;
+  const isLessonLocked = (day: number) => !vipMode && day > currentDay;
+  
+  const handleToggleVipMode = () => {
+    const newVipMode = toggleVipMode();
+    setVipMode(newVipMode);
+  };
 
   if (loading) {
     return (
@@ -100,6 +112,26 @@ const Index = () => {
             </div>
             <span className="text-french-dark">300+ essential phrases</span>
           </div>
+        </div>
+        
+        {/* VIP Mode Toggle */}
+        <div className="mt-8">
+          <button 
+            onClick={handleToggleVipMode}
+            className={`flex items-center gap-2 mx-auto px-4 py-2 rounded-full transition-colors ${
+              vipMode 
+                ? 'bg-yellow-400 text-gray-800 hover:bg-yellow-500' 
+                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+            }`}
+          >
+            <Star className={`w-4 h-4 ${vipMode ? 'fill-current' : ''}`} />
+            <span>{vipMode ? 'VIP Mode: ON' : 'VIP Mode: OFF'}</span>
+          </button>
+          <p className="text-sm text-french-muted mt-2">
+            {vipMode 
+              ? 'All lessons are unlocked! Enjoy unlimited access.' 
+              : 'Enable VIP Mode to unlock all lessons instantly.'}
+          </p>
         </div>
       </section>
       
