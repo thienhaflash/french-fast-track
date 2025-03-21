@@ -1,9 +1,17 @@
 // This file helps manage lesson loading without loading all lessons at once
-export const lessonIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
+// Define the total number of lessons
+export const TOTAL_LESSONS = 20;
+
+// Generate the lesson IDs based on total lessons
+export const lessonIds = Array.from({ length: TOTAL_LESSONS }, (_, i) => i + 1);
 
 // Function to dynamically import a specific lesson
 export const getLesson = async (id: number) => {
   try {
+    if (id < 1 || id > TOTAL_LESSONS) {
+      throw new Error(`Lesson ID ${id} is out of range (1-${TOTAL_LESSONS})`);
+    }
     const module = await import(`./lesson${id}`);
     return module.default;
   } catch (error) {
@@ -12,8 +20,18 @@ export const getLesson = async (id: number) => {
   }
 };
 
+// Create a type for lesson metadata
+export interface LessonMeta {
+  id: number;
+  day: number;
+  title: string;
+  description: string;
+  vocabularyCount: number;
+  exercisesCount: number;
+}
+
 // Function to get lesson metadata (without the full content)
-export const getLessonMeta = async (id: number) => {
+export const getLessonMeta = async (id: number): Promise<LessonMeta | null> => {
   try {
     const lesson = await getLesson(id);
     if (!lesson) return null;
@@ -34,8 +52,8 @@ export const getLessonMeta = async (id: number) => {
 };
 
 // Function to get all lesson metadata (for the index page)
-export const getAllLessonMeta = async () => {
+export const getAllLessonMeta = async (): Promise<LessonMeta[]> => {
   const metaPromises = lessonIds.map(id => getLessonMeta(id));
   const metaResults = await Promise.all(metaPromises);
-  return metaResults.filter(meta => meta !== null);
+  return metaResults.filter((meta): meta is LessonMeta => meta !== null);
 }; 

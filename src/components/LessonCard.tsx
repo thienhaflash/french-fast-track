@@ -1,19 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Lesson } from '../data/types';
 import { Check, Lock } from 'lucide-react';
+import { LessonMeta } from '../data/lessons/index';
 
 interface LessonCardProps {
-  lesson: Lesson | {
-    id: number;
-    day: number;
-    title: string;
-    description: string;
-    vocabularyCount?: number;
-    exercisesCount?: number;
-    vocabulary?: any[];
-    exercises?: any[];
-  };
+  lesson: LessonMeta;
   isCompleted: boolean;
   isLocked: boolean;
   currentDay: number;
@@ -25,15 +16,6 @@ const LessonCard: React.FC<LessonCardProps> = ({
   isLocked,
   currentDay 
 }) => {
-  // Handle both full lesson objects and metadata-only objects
-  const vocabularyCount = 'vocabularyCount' in lesson 
-    ? lesson.vocabularyCount 
-    : (lesson.vocabulary?.length || 0);
-  
-  const exercisesCount = 'exercisesCount' in lesson 
-    ? lesson.exercisesCount 
-    : (lesson.exercises?.length || 0);
-
   return (
     <div 
       className={`relative w-full max-w-sm rounded-xl overflow-hidden transition-all duration-300 ${
@@ -82,7 +64,7 @@ const LessonCard: React.FC<LessonCardProps> = ({
           
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
             <div className="text-xs text-french-muted">
-              {vocabularyCount} phrases • {exercisesCount} exercises
+              {lesson.vocabularyCount} phrases • {lesson.exercisesCount} exercises
             </div>
             <div className="text-xs font-medium text-french-accent">
               20 mins

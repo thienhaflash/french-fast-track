@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import { getLesson, VocabularyItem, Exercise, Lesson as LessonType } from '../data/lessons';
+import Layout from '../components/Layout';
+import { getLesson } from '../data/lessons/index';
+import { Lesson as LessonType, VocabularyItem, Exercise } from '../data/types';
 import { ChevronLeft, ChevronRight, Volume2, Check } from 'lucide-react';
 
 const Lesson = () => {
@@ -42,23 +42,27 @@ const Lesson = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <p>Loading lesson...</p>
-      </div>
+      <Layout>
+        <div className="flex flex-col items-center justify-center">
+          <p>Loading lesson...</p>
+        </div>
+      </Layout>
     );
   }
   
   if (error || !lesson) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <p>{error || 'Lesson not found'}</p>
-        <button 
-          onClick={() => navigate('/')}
-          className="mt-4 px-6 py-2 bg-french-blue text-white rounded-lg"
-        >
-          Back to Lessons
-        </button>
-      </div>
+      <Layout>
+        <div className="flex flex-col items-center justify-center">
+          <p>{error || 'Lesson not found'}</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="mt-4 px-6 py-2 bg-french-blue text-white rounded-lg"
+          >
+            Back to Lessons
+          </button>
+        </div>
+      </Layout>
     );
   }
   
@@ -290,23 +294,30 @@ const Lesson = () => {
   );
   
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-gray-50">
-      <Header />
-      
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12">
-        <div className="mb-12">
-          <p className="text-sm text-french-muted uppercase tracking-wide mb-2">Day {lesson.day}</p>
-          <h1 className="text-3xl md:text-4xl font-semibold">{lesson.title}</h1>
+    <Layout>
+      <div className="max-w-4xl mx-auto animate-fade-in">
+        <div className="mb-8">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center text-french-muted hover:text-french-dark transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" /> Back to lessons
+          </button>
+        </div>
+        
+        <div className="mb-8">
+          <span className="text-sm font-medium text-french-muted uppercase tracking-wider">
+            Day {lesson.day}
+          </span>
+          <h1 className="text-3xl font-semibold text-french-dark mt-1">{lesson.title}</h1>
           <p className="text-french-muted mt-2">{lesson.description}</p>
         </div>
         
         {currentStep === 'vocabulary' && renderVocabulary()}
         {currentStep === 'exercises' && renderExercises()}
         {currentStep === 'completed' && renderCompleted()}
-      </main>
-      
-      <Footer />
-    </div>
+      </div>
+    </Layout>
   );
 };
 
