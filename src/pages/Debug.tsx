@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { lessonIds, getAllLessonMeta, getLesson, LessonMeta } from '../data/lessons/index';
-import { Lesson } from '../data/types';
+import { Lesson, Exercise } from '../data/types';
+import { 
+  generateExercises, 
+  generateMixedExercises,
+  multipleChoiceGenerator, 
+  fillInBlankGenerator 
+} from '../lib/exercises';
 
 const Debug = () => {
   const [metadata, setMetadata] = useState<LessonMeta[]>([]);
@@ -9,6 +15,11 @@ const Debug = () => {
   const [selectedLessonId, setSelectedLessonId] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Exercise generation testing
+  const [generatedExercises, setGeneratedExercises] = useState<Exercise[]>([]);
+  const [exerciseType, setExerciseType] = useState<'multiple-choice' | 'fill-in-blank' | 'mixed'>('mixed');
+  const [exerciseCount, setExerciseCount] = useState(4);
 
   useEffect(() => {
     const loadMetadata = async () => {
@@ -36,12 +47,41 @@ const Debug = () => {
       console.log(`Lesson ${id} loaded:`, lesson);
       setFullLesson(lesson);
       setError(null);
+      
+      // Reset generated exercises
+      setGeneratedExercises([]);
     } catch (err) {
       console.error(`Error loading lesson ${id}:`, err);
       setError(`Error loading lesson ${id}: ${err instanceof Error ? err.message : String(err)}`);
       setFullLesson(null);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const generateExercisesForDebug = () => {
+    if (!fullLesson) return;
+    
+    try {
+      let exercises: Exercise[];
+      
+      switch (exerciseType) {
+        case 'multiple-choice':
+          exercises = generateExercises(fullLesson, 'multiple-choice', exerciseCount);
+          break;
+        case 'fill-in-blank':
+          exercises = generateExercises(fullLesson, 'fill-in-blank', exerciseCount);
+          break;
+        case 'mixed':
+        default:
+          exercises = generateMixedExercises(fullLesson, exerciseCount);
+          break;
+      }
+      
+      setGeneratedExercises(exercises);
+    } catch (err) {
+      console.error('Error generating exercises:', err);
+      setError(`Error generating exercises: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -114,6 +154,48 @@ const Debug = () => {
             </div>
           )}
         </div>
+        
+        {fullLesson && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold mb-2">Exercise Generator Test</h2>
+            <div className="flex gap-4 mb-4">
+              <select
+                value={exerciseType}
+                onChange={(e) => setExerciseType(e.target.value as any)}
+                className="px-3 py-2 border rounded"
+              >
+                <option value="mixed">Mixed Exercises</option>
+                <option value="multiple-choice">Multiple Choice Only</option>
+                <option value="fill-in-blank">Fill in Blank Only</option>
+              </select>
+              
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={exerciseCount}
+                onChange={(e) => setExerciseCount(Number(e.target.value))}
+                className="px-3 py-2 border rounded w-20"
+              />
+              
+              <button
+                onClick={generateExercisesForDebug}
+                className="px-4 py-2 bg-green-500 text-white rounded"
+              >
+                Generate Exercises
+              </button>
+            </div>
+            
+            {generatedExercises.length > 0 && (
+              <div className="bg-gray-100 p-4 rounded">
+                <h3 className="font-bold mb-2">Generated {exerciseType} Exercises</h3>
+                <pre className="bg-gray-800 text-white p-4 rounded overflow-auto">
+                  {JSON.stringify(generatedExercises, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import { getLesson } from '../data/lessons/index';
 import { Lesson as LessonType, VocabularyItem, Exercise } from '../data/types';
 import { ChevronLeft, ChevronRight, Volume2, Check } from 'lucide-react';
+import { useExercises } from '../hooks/useExercises';
 
 const Lesson = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,10 +16,13 @@ const Lesson = () => {
   const [error, setError] = useState<string | null>(null);
   
   const [currentStep, setCurrentStep] = useState<'vocabulary' | 'exercises' | 'completed'>('vocabulary');
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [userInput, setUserInput] = useState('');
+  
+  // Use our custom hook to manage exercises
+  const exerciseManager = useExercises(lesson, {
+    count: 6,
+    preferGeneratedExercises: true
+  });
   
   useEffect(() => {
     const loadLesson = async () => {
@@ -40,11 +44,11 @@ const Lesson = () => {
     loadLesson();
   }, [lessonId]);
   
-  if (loading) {
+  if (loading || exerciseManager.isGenerating) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center">
-          <p>Loading lesson...</p>
+          <p>Loading lesson{exerciseManager.isGenerating ? ' exercises' : ''}...</p>
         </div>
       </Layout>
     );
@@ -66,6 +70,22 @@ const Lesson = () => {
     );
   }
   
+  if (exerciseManager.error) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-red-500">Error loading exercises: {exerciseManager.error}</p>
+          <button 
+            onClick={() => exerciseManager.regenerateExercises()}
+            className="mt-4 px-6 py-2 bg-french-blue text-white rounded-lg"
+          >
+            Try Again
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+  
   const handleNext = () => {
     if (currentStep === 'vocabulary') {
       setCurrentStep('exercises');
@@ -73,50 +93,37 @@ const Lesson = () => {
     }
     
     if (currentStep === 'exercises') {
-      if (currentExerciseIndex < lesson.exercises.length - 1) {
-        setCurrentExerciseIndex(currentExerciseIndex + 1);
-        setSelectedAnswer(null);
-        setIsCorrect(null);
-        setUserInput('');
-      } else {
+      const hasNext = exerciseManager.goToNextExercise();
+      if (!hasNext) {
         setCurrentStep('completed');
+      } else {
+        setUserInput('');
       }
     }
   };
   
   const handleBack = () => {
-    if (currentStep === 'exercises' && currentExerciseIndex > 0) {
-      setCurrentExerciseIndex(currentExerciseIndex - 1);
-      setSelectedAnswer(null);
-      setIsCorrect(null);
-      setUserInput('');
-      return;
-    }
-    
-    if (currentStep === 'exercises' && currentExerciseIndex === 0) {
-      setCurrentStep('vocabulary');
+    if (currentStep === 'exercises') {
+      const hasPrevious = exerciseManager.goToPreviousExercise();
+      if (!hasPrevious && exerciseManager.currentIndex === 0) {
+        setCurrentStep('vocabulary');
+      } else {
+        setUserInput('');
+      }
       return;
     }
     
     if (currentStep === 'completed') {
       setCurrentStep('exercises');
-      setCurrentExerciseIndex(lesson.exercises.length - 1);
     }
   };
   
   const handleAnswerSelect = (answer: string) => {
-    setSelectedAnswer(answer);
-    
-    const currentExercise = lesson.exercises[currentExerciseIndex];
-    setIsCorrect(answer === currentExercise.answer);
+    exerciseManager.answerCurrentExercise(answer);
   };
   
   const handleFillInBlankSubmit = () => {
-    const currentExercise = lesson.exercises[currentExerciseIndex];
-    const isAnswerCorrect = userInput.trim().toLowerCase() === currentExercise.answer.toLowerCase();
-    
-    setSelectedAnswer(userInput);
-    setIsCorrect(isAnswerCorrect);
+    exerciseManager.answerCurrentExercise(userInput);
   };
   
   const handleFinish = () => {
@@ -146,12 +153,28 @@ const Lesson = () => {
   );
   
   const renderExercises = () => {
-    const currentExercise = lesson.exercises[currentExerciseIndex];
+    const currentExercise = exerciseManager.currentExercise;
+    
+    if (!currentExercise) {
+      return (
+        <div className="text-center">
+          <p>No exercises available.</p>
+          <button
+            onClick={() => exerciseManager.regenerateExercises()}
+            className="mt-4 px-6 py-2 bg-french-blue text-white rounded-lg"
+          >
+            Generate New Exercises
+          </button>
+        </div>
+      );
+    }
     
     return (
       <div className="w-full max-w-2xl mx-auto animate-fade-in">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-semibold">Exercise {currentExerciseIndex + 1} of {lesson.exercises.length}</h2>
+          <h2 className="text-2xl font-semibold">
+            Exercise {exerciseManager.currentIndex + 1} of {exerciseManager.totalExercises}
+          </h2>
           <span className="text-sm text-french-muted">
             {currentExercise.type === 'multiple-choice' ? 'Multiple Choice' : 'Fill in the Blank'}
           </span>
@@ -167,12 +190,13 @@ const Lesson = () => {
                   key={index}
                   onClick={() => handleAnswerSelect(option)}
                   className={`w-full py-3 px-4 rounded-lg border text-left transition-all ${
-                    selectedAnswer === option
-                      ? isCorrect
+                    exerciseManager.userAnswer === option
+                      ? exerciseManager.isCurrentCorrect
                         ? 'border-green-500 bg-green-50 text-green-700'
                         : 'border-red-500 bg-red-50 text-red-700'
                       : 'border-gray-200 hover:border-french-blue hover:bg-blue-50'
                   }`}
+                  disabled={exerciseManager.isAnswered}
                 >
                   {option}
                 </button>
@@ -188,16 +212,16 @@ const Lesson = () => {
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="Type your answer here"
                 className={`w-full py-3 px-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-french-blue ${
-                  selectedAnswer
-                    ? isCorrect
+                  exerciseManager.isAnswered
+                    ? exerciseManager.isCurrentCorrect
                       ? 'border-green-500 bg-green-50 text-green-700'
                       : 'border-red-500 bg-red-50 text-red-700'
                     : ''
                 }`}
-                disabled={selectedAnswer !== null}
+                disabled={exerciseManager.isAnswered}
               />
               
-              {selectedAnswer === null && (
+              {!exerciseManager.isAnswered && (
                 <button
                   onClick={handleFillInBlankSubmit}
                   className="px-6 py-2 bg-french-blue text-white rounded-lg hover:bg-blue-700 transition-colors button-hover"
@@ -208,21 +232,21 @@ const Lesson = () => {
             </div>
           )}
           
-          {selectedAnswer !== null && (
-            <div className={`mt-6 p-4 rounded-lg ${isCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
+          {exerciseManager.isAnswered && (
+            <div className={`mt-6 p-4 rounded-lg ${exerciseManager.isCurrentCorrect ? 'bg-green-50' : 'bg-red-50'}`}>
               <div className="flex items-start">
-                <div className={`p-1 rounded-full ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-                  {isCorrect ? (
+                <div className={`p-1 rounded-full ${exerciseManager.isCurrentCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
+                  {exerciseManager.isCurrentCorrect ? (
                     <Check className="w-4 h-4 text-white" />
                   ) : (
                     <span className="text-white text-xs px-1">✕</span>
                   )}
                 </div>
                 <div className="ml-3">
-                  <p className={`font-medium ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
-                    {isCorrect ? 'Correct!' : 'Incorrect'}
+                  <p className={`font-medium ${exerciseManager.isCurrentCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                    {exerciseManager.isCurrentCorrect ? 'Correct!' : 'Incorrect'}
                   </p>
-                  {!isCorrect && (
+                  {!exerciseManager.isCurrentCorrect && (
                     <p className="text-sm text-red-600 mt-1">
                       The correct answer is: {currentExercise.answer}
                     </p>
@@ -241,12 +265,12 @@ const Lesson = () => {
             <ChevronLeft className="w-4 h-4" /> Back
           </button>
           
-          {selectedAnswer !== null && (
+          {exerciseManager.isAnswered && (
             <button
               onClick={handleNext}
               className="px-6 py-3 bg-french-blue text-white rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors button-hover"
             >
-              {currentExerciseIndex < lesson.exercises.length - 1 ? (
+              {exerciseManager.currentIndex < exerciseManager.totalExercises - 1 ? (
                 <>Next <ChevronRight className="w-4 h-4" /></>
               ) : (
                 <>Complete Lesson <ChevronRight className="w-4 h-4" /></>
@@ -269,7 +293,25 @@ const Lesson = () => {
         You've successfully completed Day {lesson.day}: {lesson.title}
       </p>
       
-      <div className="glass-card p-8 rounded-xl mb-12">
+      <div className="glass-card p-8 rounded-xl mb-8">
+        <h3 className="text-xl mb-4">Your Results</h3>
+        <div className="flex justify-center gap-8 my-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-french-blue">{exerciseManager.progress.completed}</div>
+            <div className="text-sm text-french-muted">Completed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-500">{exerciseManager.progress.correct}</div>
+            <div className="text-sm text-french-muted">Correct</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-french-dark">
+              {Math.round((exerciseManager.progress.correct / exerciseManager.progress.total) * 100)}%
+            </div>
+            <div className="text-sm text-french-muted">Score</div>
+          </div>
+        </div>
+        
         <h3 className="text-xl mb-4">You learned:</h3>
         <ul className="text-left space-y-2">
           {lesson.vocabulary.map((item, index) => (
@@ -284,12 +326,24 @@ const Lesson = () => {
         </ul>
       </div>
       
-      <button
-        onClick={handleFinish}
-        className="px-8 py-3 bg-french-blue text-white rounded-lg hover:bg-blue-700 transition-colors button-hover"
-      >
-        Return to Lessons
-      </button>
+      <div className="flex justify-center gap-4">
+        <button
+          onClick={() => {
+            exerciseManager.regenerateExercises();
+            setCurrentStep('exercises');
+          }}
+          className="px-6 py-3 border border-french-blue text-french-blue rounded-lg hover:bg-blue-50 transition-colors"
+        >
+          Try New Exercises
+        </button>
+        
+        <button
+          onClick={handleFinish}
+          className="px-8 py-3 bg-french-blue text-white rounded-lg hover:bg-blue-700 transition-colors button-hover"
+        >
+          Return to Lessons
+        </button>
+      </div>
     </div>
   );
   
